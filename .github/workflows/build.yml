@@ -37,10 +37,7 @@ jobs:
 
       - name: Build
         run: cargo build --release
-
-      - name: Run checks
-        run: cargo check
-
+        
       - name: Package binary
         run: |
           mkdir -p release/windows
