@@ -1,0 +1,79 @@
+name: Build and Release (Windows)
+
+on:
+  push:
+    branches:
+      - dev
+      - beta
+
+jobs:
+  build-and-release-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Run checks
+        run: cargo check
+
+      - name: Package binary
+        run: |
+          mkdir -p release/windows
+          cp target/release/Password_Manager.exe release/windows/password-manager.exe
+          tar -czvf release/password-manager-windows.tar.gz -C release/windows password-manager.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: password-manager-windows
+          path: release/password-manager-windows.tar.gz
+
+  create-release:
+    needs: build-and-release-windows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: password-manager-windows
+          path: release/windows
+
+      - name: Create release
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          artifacts: "release/windows/password-manager-windows.tar.gz"
+          token: ${{ secrets.PAT_TOKEN }}
+          name: Build v${{ github.run_number }}
+          tag: v${{ github.run_number }}
+          prerelease: true
+
+  cleanup:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: geekyeggo/delete-artifact@v5
+        with:
+          name: password-manager-windows
