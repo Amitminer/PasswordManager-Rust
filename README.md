@@ -130,7 +130,6 @@ if __name__ == "__main__":
     print("\n⚠️ Clearing All Data...")
     print(clear_all_data())
 ```
----
 
 ## 🔗 CLI Usage  
 
@@ -200,11 +199,5 @@ This project was built to learn:
 ## 📜 License  
 This project is **open-source** and licensed under the **MIT License**.  
 
----
-
-## 📞 Contact  
-- **GitHub:** [yourusername/passwordmanager](https://github.com/yourusername/passwordmanager)  
-- **Email:** your@email.com  
+--- 
 ```
-
----
