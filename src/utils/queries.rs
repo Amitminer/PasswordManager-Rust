@@ -19,22 +19,25 @@ impl SqlQueries {
     /// Columns:
     /// - `id`: INTEGER (Primary Key, Always 1)
     /// - `hash`: TEXT (Not Null)
+    /// - `salt`: TEXT (Not Null)
     pub const CREATE_MASTER_PASSWORD_TABLE: &str = "
         CREATE TABLE IF NOT EXISTS master_password (
             id INTEGER PRIMARY KEY CHECK (id = 1),
-            hash TEXT NOT NULL
+            hash TEXT NOT NULL,
+            salt TEXT NOT NULL
         )";
 
     // Master password operations
     /// Inserts or replaces the master password hash in the `master_password` table.
     /// Parameters:
     /// - `?1`: The Argon2 hash of the master password.
+    /// - `?2`: The salt used for the master password.
     pub const INSERT_MASTER_PASSWORD: &str = "
-        INSERT OR REPLACE INTO master_password (id, hash) VALUES (1, ?1)";
+        INSERT OR REPLACE INTO master_password (id, hash, salt) VALUES (1, ?1, ?2)";
 
     /// Retrieves the master password hash from the `master_password` table.
-    pub const GET_MASTER_PASSWORD_HASH: &str = "
-        SELECT hash FROM master_password WHERE id = 1";
+    pub const GET_MASTER_PASSWORD_DATA: &str = "
+        SELECT hash, salt FROM master_password WHERE id = 1";
 
     // Password operations
     /// Inserts a new password entry into the `passwords` table.

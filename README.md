@@ -1,112 +1,210 @@
 ---
+# 🔐 Password Manager  
 
-# Password Manager
-
-This is a **Password Manager** project built for learning purposes. It demonstrates secure password storage, encryption, and database management using modern cryptographic techniques.
-
----
-
-## Features
-
-- **Master Password Protection**: Uses Argon2 for secure password hashing and verification.
-- **Encryption**: Passwords are encrypted using AES-256-GCM before storage.
-- **Database**: SQLite is used to store encrypted passwords and the master password hash.
-- **Zeroization**: Sensitive data (e.g., keys, passwords) is securely erased from memory after use.
-- **Command-Line Interface (CLI)**: Easy-to-use menu for managing passwords.
+A secure password manager with **AES-256-GCM encryption**, **Argon2 hashing**, and a **web API**.  
+Supports both **CLI** and **Web API** for managing passwords securely.  
 
 ---
 
-## How It Works
-
-### 1. **Master Password**
-- The master password is hashed using **Argon2**, a modern password hashing algorithm designed to resist brute-force and side-channel attacks.
-- The hash is stored in the SQLite database.
-- During login, the entered password is verified against the stored hash.
-
-### 2. **Encryption**
-- Passwords are encrypted using **AES-256-GCM**, a secure symmetric encryption algorithm.
-- A unique **nonce** is generated for each encryption operation to ensure ciphertext uniqueness.
-- The encryption key is derived from the master password using Argon2.
-
-### 3. **Database**
-- SQLite is used to store:
-  - The master password hash.
-  - Encrypted passwords (website, username, and encrypted password).
-- The database is initialized with two tables:
-  - `master_password`: Stores the Argon2 hash of the master password.
-  - `passwords`: Stores encrypted password entries.
-
-### 4. **Security**
-- **Argon2** is used for key derivation and password hashing, with configurable parameters:
-  - Memory cost: 19 MB
-  - Time cost: 2 iterations
-  - Parallelism: 1 thread
-- **AES-256-GCM** ensures confidentiality and integrity of encrypted passwords.
-- Sensitive data (e.g., keys, passwords) is zeroized from memory after use to prevent leaks.
+## 🚀 Features  
+✅ **Master Password Protection** (Argon2-based hashing)  
+✅ **AES-256-GCM Encryption** (Secure password storage)  
+✅ **SQLite Database** (Encrypted storage for passwords)  
+✅ **Web API Support** (Actix-Web based API)  
+✅ **Zeroization** (Sensitive data is securely erased from memory)  
+✅ **Frontend & CLI Support** (Use via Web UI or CLI)  
 
 ---
 
-## Getting Started
+## 📦 Installation  
 
-### Prerequisites
-- Rust (install from [rustup.rs](https://rustup.rs/))
-- SQLite (for database storage, already bundled with crate)
+### **1️⃣ Frontend Setup**  
+The frontend is built using **Next.js**.  
 
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Amitminer/PasswordManager-Rust.git
-   cd PasswordManager-Rust
-   ```
+#### **Requirements:**  
+- **Node.js** (Download from [nodejs.org](https://nodejs.org/))  
+- **Git** (Download from [git-scm.com](https://git-scm.com/))  
 
-2. Build the project:
-   ```bash
-   cargo build --release
-   ```
+#### **Install & Run**  
+```sh
+git clone https://github.com/Amitminer/PasswordManager-Rust.git
+cd PasswordManager-Rust
+cd website
+npm install
+npm run dev
+```
+---
 
-3. Run the password manager:
-   ```bash
-   cargo run --release
-   ```
+### **2️⃣ Backend Setup**  
+The backend is built in **Rust** using Actix-Web.  
+
+#### **Requirements:**  
+- **Rust & Cargo** ([Install Rust](https://rustup.rs/))  
+- **SQLite** (Bundled with `rusqlite`)  
+
+#### **Install & Run**  
+```sh
+git clone https://github.com/Amitminer/PasswordManager-Rust.git
+cd PasswordManager-Rust
+cargo build --release
+cargo run -- --api  # OR run compiled binary:
+./passwordmanager --api
+``
+
+This starts the **Web API** at `http://127.0.0.1:8080/api`.  
 
 ---
 
-## Usage
+## 🌍 Web API Usage  
 
-1. **First Run**:
-   - You will be prompted to create a master password.
-   - The master password hash will be stored in the database.
-
-2. **Main Menu**:
-   - Add new passwords.
-   - Retrieve stored passwords.
-   - List all stored websites and usernames.
-   - Remove passwords.
-   - Clear all data.
-
-3. **Security**:
-   - Always use a strong master password.
-   - Do not share your master password.
+### **Available Endpoints**  
+| Method | Endpoint | Description |
+|--------|---------|-------------|
+| `GET` | `/api/initialize` | Check if the master password is set |
+| `POST` | `/api/create-master-password` | Set the master password |
+| `POST` | `/api/verify-master-password` | Verify master password |
+| `POST` | `/api/add-password` | Add a new password |
+| `GET` | `/api/list-passwords` | List stored passwords |
+| `GET` | `/api/get-password/{service}` | Retrieve a specific password |
+| `DELETE` | `/api/remove-password/{service}` | Remove a password |
+| `DELETE` | `/api/clear-all-data` | Delete all stored passwords |
 
 ---
 
-## Why I Built This
+## 🐍 API Example (Python Requests)  
 
-This project was created as a learning exercise to understand:
-- Secure password storage and encryption.
-- Cryptographic algorithms like Argon2 and AES-256-GCM.
-- Database management with SQLite.
-- Memory safety and zeroization in Rust.
+### **1️⃣ Install Dependencies**  
+```sh
+pip install requests
+```
+
+### **2️⃣ Sample Python Client**
+```python
+import requests
+
+BASE_URL = "http://127.0.0.1:8080/api"
+
+def set_master_password(password):
+    return requests.post(f"{BASE_URL}/create-master-password", json={"password": password}).json()
+
+def verify_master_password(password):
+    return requests.post(f"{BASE_URL}/verify-master-password", json={"password": password}).json()
+
+def add_password(service, username, password):
+    return requests.post(f"{BASE_URL}/add-password", json={"service": service, "username": username, "password": password}).json()
+
+def list_passwords():
+    return requests.get(f"{BASE_URL}/list-passwords").json()
+
+def get_password(service):
+    response = requests.get(f"{BASE_URL}/get-password/{service}")
+    return response.json() if response.status_code == 200 else f"Error: {response.text}"
+
+def remove_password(service):
+    return requests.delete(f"{BASE_URL}/remove-password/{service}").json()
+
+def clear_all_data():
+    return requests.delete(f"{BASE_URL}/clear-all-data").json()
+
+if __name__ == "__main__":
+    master_password = "my_secure_master_password"
+
+    print("🔑 Setting Master Password...")
+    print(set_master_password(master_password))
+
+    print("\n✅ Verifying Master Password...")
+    print(verify_master_password(master_password))
+
+    print("\n🔐 Adding a Password Entry...")
+    print(add_password("example.com", "admin", "secure123"))
+
+    print("\n📜 Listing Stored Passwords...")
+    print(list_passwords())
+
+    print("\n🔎 Retrieving Password for 'example.com'...")
+    print(get_password("example.com"))
+
+    print("\n❌ Removing Password for 'example.com'...")
+    print(remove_password("example.com"))
+
+    print("\n⚠️ Clearing All Data...")
+    print(clear_all_data())
+```
+---
+
+## 🔗 CLI Usage  
+
+### **1️⃣ Running the CLI**  
+```sh
+cargo run
+```
+or  
+```sh
+./passwordmanager
+```
+
+### **2️⃣ Available CLI Actions**  
+- **Add a new password**  
+- **Retrieve stored passwords**  
+- **List all stored websites and usernames**  
+- **Remove passwords**  
+- **Clear all stored data**  
+
+### **3️⃣ Security**  
+- **Use a strong master password**  
+- **Passwords are encrypted with AES-256-GCM**  
+- **Data is erased from memory after use (zeroization)**  
 
 ---
 
-## Dependencies
+## 🔒 Security  
 
-- **Rust Crates**:
-  - `aes-gcm`: For AES-256-GCM encryption.
-  - `argon2`: For password hashing and key derivation.
-  - `rusqlite`: For SQLite database operations.
-  - `rpassword`: For secure password input.
-  - `zeroize`: For securely erasing sensitive data from memory.
+### **1️⃣ Argon2 Password Hashing**  
+- **Memory Cost**: 19 MB  
+- **Time Cost**: 2 iterations  
+- **Parallelism**: 1 thread  
+
+### **2️⃣ AES-256-GCM Encryption**  
+- **AES-GCM** ensures password confidentiality & integrity.  
+- **Unique nonce per encryption** to prevent attacks.  
+
+---
+
+## 🏗 Why This Project?  
+This project was built to learn:  
+✅ Secure **password storage & encryption**  
+✅ Cryptographic techniques (**Argon2, AES-256-GCM**)  
+✅ Database security with **SQLite**  
+✅ **Web API Development** in Rust with **Actix-Web**  
+✅ **Frontend & Backend Security Best Practices**  
+
+---
+
+## ⚙️ Dependencies  
+
+### **📦 Rust Crates Used:**  
+- `actix-web` – Web API framework  
+- `rusqlite` – SQLite database  
+- `argon2` – Password hashing  
+- `aes-gcm` – AES-256-GCM encryption  
+- `rpassword` – Secure password input  
+- `zeroize` – Secure memory wiping  
+
+### **🌍 Frontend Dependencies:**  
+- `Next.js` – React-based web framework  
+- `Tailwind CSS` – UI styling  
+- `Axios` – API calls  
+
+---
+
+## 📜 License  
+This project is **open-source** and licensed under the **MIT License**.  
+
+---
+
+## 📞 Contact  
+- **GitHub:** [yourusername/passwordmanager](https://github.com/yourusername/passwordmanager)  
+- **Email:** your@email.com  
+```
 
 ---

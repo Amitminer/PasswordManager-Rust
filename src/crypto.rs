@@ -3,7 +3,7 @@ use aes_gcm::{
     Aes256Gcm, Nonce,
 };
 use argon2::{
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    password_hash::{PasswordHasher, PasswordHash, SaltString, PasswordVerifier},
     Argon2, ParamsBuilder,
 };
 use thiserror::Error;
@@ -12,55 +12,39 @@ use zeroize::Zeroize;
 /// Custom error type for cryptographic operations.
 #[derive(Error, Debug)]
 pub enum CryptoError {
-    #[error("Encryption failed")]
-    EncryptionError,
-    #[error("Decryption failed")]
-    DecryptionError,
-    #[error("Password hashing failed")]
-    HashingError,
+    #[error("Encryption failed: {0}")]
+    EncryptionError(String),
+    #[error("Decryption failed: {0}")]
+    DecryptionError(String),
+    #[error("Password hashing failed: {0}")]
+    HashingError(String),
 }
 
-/// Hashes a password using Argon2 and derives a key.
-///
-/// # Arguments
-/// - `password`: The password to hash.
-/// - `memory_cost`: Memory cost parameter for Argon2 (in kibibytes).
-/// - `time_cost`: Time cost parameter for Argon2 (number of iterations).
-/// - `parallelism`: Parallelism parameter for Argon2 (number of threads).
-///
-/// # Returns
-/// - A tuple containing:
-///   - The Argon2 hash string (for storage).
-///   - A 32-byte key derived from the hash (for encryption).
-///
-/// # Errors
-/// - Returns `CryptoError::HashingError` if hashing fails.
 pub fn hash_password(
     password: &str,
     memory_cost: u32,
     time_cost: u32,
     parallelism: u32,
-) -> Result<(String, Vec<u8>), CryptoError> {
-    // Generate a random salt for Argon2 hashing.
-    let salt = SaltString::generate(&mut OsRng);
+    existing_salt: Option<&str>,
+) -> Result<(String, String, Vec<u8>), CryptoError> {
+    let salt = match existing_salt {
+        Some(s) => SaltString::from_b64(s).map_err(|_| CryptoError::HashingError("Invalid salt".to_string()))?,
+        None => SaltString::generate(&mut OsRng),
+    };
 
-    // Configure Argon2 parameters.
     let params = ParamsBuilder::new()
-        .m_cost(memory_cost) // Memory cost
-        .t_cost(time_cost)   // Time cost
-        .p_cost(parallelism) // Parallelism
+        .m_cost(memory_cost)
+        .t_cost(time_cost)
+        .p_cost(parallelism)
         .build()
-        .map_err(|_| CryptoError::HashingError)?;
+        .map_err(|_| CryptoError::HashingError("Hashing failed".to_string()))?;
 
-    // Create an Argon2 instance with the specified parameters.
     let argon2 = Argon2::new(argon2::Algorithm::Argon2id, argon2::Version::V0x13, params);
 
-    // Hash the password using Argon2.
     let password_hash = argon2
         .hash_password(password.as_bytes(), &salt)
-        .map_err(|_| CryptoError::HashingError)?;
+        .map_err(|_| CryptoError::HashingError("Hashing failed".to_string()))?;
 
-    // Extract the hash string and derive a 32-byte key from it.
     let hash_str = password_hash.to_string();
     let key = password_hash
         .hash
@@ -68,28 +52,17 @@ pub fn hash_password(
         .as_bytes()[..32]
         .to_vec();
 
-    Ok((hash_str, key))
+    Ok((hash_str, salt.to_string(), key))
 }
 
-/// Verifies a password against a stored Argon2 hash.
-///
-/// # Arguments
-/// - `password`: The password to verify.
-/// - `hash`: The stored Argon2 hash string.
-///
-/// # Returns
-/// - `true` if the password matches the hash, otherwise `false`.
-///
-/// # Errors
-/// - Returns `CryptoError::HashingError` if hash parsing fails.
 pub fn verify_password(password: &str, hash: &str) -> Result<bool, CryptoError> {
-    // Parse the stored hash string into a `PasswordHash` object.
-    let parsed_hash = PasswordHash::new(hash).map_err(|_| CryptoError::HashingError)?;
+    let parsed_hash = PasswordHash::new(hash).map_err(|_| CryptoError::HashingError("Hashing failed".to_string()))?;
 
-    // Verify the password against the parsed hash.
-    Ok(Argon2::default()
+    let result = Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)
-        .is_ok())
+        .is_ok();
+
+    Ok(result)
 }
 
 /// Encrypts data using AES-256-GCM.
@@ -99,28 +72,26 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool, CryptoError> 
 /// - `key`: The encryption key (must be 32 bytes).
 ///
 /// # Returns
-/// - A concatenated vector containing the nonce and encrypted data.
+/// - A vector containing the nonce (12 bytes) followed by the encrypted data.
 ///
 /// # Errors
 /// - Returns `CryptoError::EncryptionError` if encryption fails.
 pub fn encrypt(data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
-    // Create a copy of the key and initialize the AES-256-GCM cipher.
-    let mut key_copy = key.to_vec();
-    let cipher = Aes256Gcm::new_from_slice(&key_copy).map_err(|_| CryptoError::EncryptionError)?;
+    let mut encryption_key_copy = key.to_vec();
+    let cipher = Aes256Gcm::new_from_slice(&encryption_key_copy)
+        .map_err(|_| CryptoError::EncryptionError("Failed to initialize AES-256-GCM cipher".to_string()))?;
 
-    // Generate a random nonce for encryption.
-    let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
+    let encryption_nonce = Aes256Gcm::generate_nonce(&mut OsRng);
 
-    // Encrypt the data using the cipher and nonce.
-    let encrypted_data = cipher
-        .encrypt(&nonce, data)
-        .map_err(|_| CryptoError::EncryptionError)?;
+    let ciphertext = cipher
+        .encrypt(&encryption_nonce, data)
+        .map_err(|_| CryptoError::EncryptionError("Encryption failed".to_string()))?;
 
-    // Securely clear the key copy from memory.
-    key_copy.zeroize();
+    encryption_key_copy.zeroize();
 
-    // Concatenate the nonce and encrypted data for storage.
-    Ok([nonce.to_vec(), encrypted_data].concat())
+    let result = [encryption_nonce.to_vec(), ciphertext].concat();
+
+    Ok(result)
 }
 
 /// Decrypts data using AES-256-GCM.
@@ -135,21 +106,25 @@ pub fn encrypt(data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
 /// # Errors
 /// - Returns `CryptoError::DecryptionError` if decryption fails.
 pub fn decrypt(encrypted_data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
-    // Create a copy of the key and initialize the AES-256-GCM cipher.
-    let mut key_copy = key.to_vec();
-    let cipher = Aes256Gcm::new_from_slice(&key_copy).map_err(|_| CryptoError::DecryptionError)?;
-
-    // Split the encrypted data into nonce and ciphertext.
-    let nonce = Nonce::from_slice(&encrypted_data[..12]); // Nonce is always 12 bytes.
+    if encrypted_data.len() < 12 {
+        return Err(CryptoError::DecryptionError("Encrypted data too short".to_string()));
+    }
+    
+    if key.len() != 32 {
+        return Err(CryptoError::DecryptionError("Invalid key length".to_string()));
+    }
+    
+    let mut encryption_key_copy = key.to_vec();
+    let cipher = Aes256Gcm::new_from_slice(&encryption_key_copy)
+        .map_err(|_| CryptoError::DecryptionError("Failed to create cipher".to_string()))?;
+    
+    let encryption_nonce = Nonce::from_slice(&encrypted_data[..12]);
     let ciphertext = &encrypted_data[12..];
-
-    // Decrypt the data using the cipher and nonce.
+    
     let decrypted_data = cipher
-        .decrypt(nonce, ciphertext)
-        .map_err(|_| CryptoError::DecryptionError)?;
-
-    // Securely clear the key copy from memory.
-    key_copy.zeroize();
-
+        .decrypt(encryption_nonce, ciphertext)
+        .map_err(|_| CryptoError::DecryptionError("Decryption failed".to_string()))?;
+    
+    encryption_key_copy.zeroize();
     Ok(decrypted_data)
 }

@@ -17,7 +17,7 @@ pub struct Database {
 }
 
 impl Database {
-    /// Creates or opens a SQLite database at the specified path.
+    /// **Creates or opens a SQLite database at the specified path.**
     ///
     /// # Arguments
     /// - `path`: The path to the SQLite database file.
@@ -28,76 +28,72 @@ impl Database {
     /// # Errors
     /// - Returns `rusqlite::Error` if the database cannot be opened or initialized.
     pub fn new(path: &str) -> Result<Self> {
-        // Open or create the SQLite database file.
         let conn = Connection::open(Path::new(path))?;
-
-        // Initialize the required tables if they don't already exist.
+        
+        // Initialize tables if they don't exist
         conn.execute(Queries::CREATE_PASSWORDS_TABLE, [])?;
         conn.execute(Queries::CREATE_MASTER_PASSWORD_TABLE, [])?;
 
         Ok(Database { conn })
     }
 
-    /// Stores the master password hash in the database.
+    /// **Stores the master password hash and salt in the database.**
     ///
     /// # Arguments
-    /// - `hash`: The Argon2 hash of the master password.
-    ///
-    /// # Returns
-    /// - `Ok(())` if the hash is stored successfully.
+    /// - `password_hash`: The Argon2 hash of the master password.
+    /// - `salt`: The salt used for hashing.
     ///
     /// # Errors
-    /// - Returns `rusqlite::Error` if the database operation fails.
-    pub fn create_master_password(&self, hash: &str) -> Result<(), rusqlite::Error> {
-        self.conn
-            .execute(Queries::INSERT_MASTER_PASSWORD, params![hash])
-            .map(|_| ())
+    /// - Returns `rusqlite::Error` if the operation fails.
+    pub fn create_master_password(&self, password_hash: &str, salt: &str) -> Result<()> {
+        self.conn.execute(Queries::INSERT_MASTER_PASSWORD, params![password_hash, salt])?;
+        Ok(())
     }
 
-    /// Retrieves the stored master password hash from the database.
+    /// **Retrieves the stored master password hash and salt.**
     ///
     /// # Returns
-    /// - `Some(hash)` if a master password hash exists.
-    /// - `None` if no master password hash is found.
+    /// - `Some((hash, salt))` if the master password exists.
+    /// - `None` if no master password is set.
     ///
     /// # Errors
-    /// - Returns `rusqlite::Error` if the database operation fails.
-    pub fn get_master_password_hash(&self) -> Result<Option<String>, rusqlite::Error> {
+    /// - Returns `rusqlite::Error` if the query fails.
+    pub fn get_master_password_data(&self) -> Result<Option<(String, String)>> {
         self.conn
-            .query_row(Queries::GET_MASTER_PASSWORD_HASH, params![], |row| row.get(0))
+            .query_row(
+                Queries::GET_MASTER_PASSWORD_DATA, 
+                params![], 
+                |row| Ok((row.get(0)?, row.get(1)?))
+            )
             .optional()
     }
 
-    /// Adds a new password entry to the database.
+    /// **Adds a new password entry to the database.**
     ///
     /// # Arguments
     /// - `entry`: The `PasswordEntry` to store.
     ///
-    /// # Returns
-    /// - `Ok(())` if the entry is stored successfully.
-    ///
     /// # Errors
-    /// - Returns `rusqlite::Error` if the database operation fails.
-    pub fn add_password(&mut self, entry: &PasswordEntry) -> Result<(), rusqlite::Error> {
-        self.conn
-            .execute(
-                Queries::INSERT_PASSWORD,
-                params![entry.website, entry.username, entry.password],
-            )
-            .map(|_| ())
+    /// - Returns `rusqlite::Error` if the operation fails.
+    pub fn add_password(&self, entry: &PasswordEntry) -> Result<()> {
+        self.conn.execute(
+            Queries::INSERT_PASSWORD,
+            params![entry.website, entry.username, entry.password],
+        )?;
+        Ok(())
     }
 
-    /// Retrieves a password entry from the database by website.
+    /// **Retrieves a password entry from the database by website.**
     ///
     /// # Arguments
     /// - `website`: The website associated with the password entry.
     ///
     /// # Returns
     /// - `Some(PasswordEntry)` if the entry is found.
-    /// - `None` if no entry is found.
+    /// - `None` if no entry exists.
     ///
     /// # Errors
-    /// - Returns `rusqlite::Error` if the database operation fails.
+    /// - Returns `rusqlite::Error` if the query fails.
     pub fn get_password(&self, website: &str) -> Result<Option<PasswordEntry>> {
         self.conn
             .query_row(
@@ -114,18 +110,15 @@ impl Database {
             .optional()
     }
 
-    /// Lists all password entries in the database.
+    /// **Lists all password entries in the database.**
     ///
     /// # Returns
     /// - A vector of `PasswordEntry` objects.
     ///
     /// # Errors
-    /// - Returns `rusqlite::Error` if the database operation fails.
+    /// - Returns `rusqlite::Error` if the query fails.
     pub fn list_passwords(&self) -> Result<Vec<PasswordEntry>> {
-        // Prepare the SQL query to list all passwords.
         let mut stmt = self.conn.prepare(Queries::LIST_PASSWORDS)?;
-
-        // Execute the query and map the results to `PasswordEntry` objects.
         let rows = stmt.query_map([], |row| {
             Ok(PasswordEntry {
                 website: row.get(0)?,
@@ -134,12 +127,11 @@ impl Database {
             })
         })?;
 
-        // Collect the results into a vector.
         let result: Vec<PasswordEntry> = rows.collect::<Result<_, _>>()?;
         Ok(result)
     }
 
-    /// Deletes a password entry from the database by website.
+    /// **Deletes a password entry from the database by website.**
     ///
     /// # Arguments
     /// - `website`: The website associated with the password entry to delete.
@@ -149,22 +141,18 @@ impl Database {
     /// - `false` if no entry was found.
     ///
     /// # Errors
-    /// - Returns `rusqlite::Error` if the database operation fails.
+    /// - Returns `rusqlite::Error` if the operation fails.
     pub fn delete_password(&self, website: &str) -> Result<bool> {
         let rows_affected = self.conn.execute(Queries::DELETE_PASSWORD, params![website])?;
         Ok(rows_affected > 0)
     }
 
-    /// Clears all password entries from the database.
-    ///
-    /// # Returns
-    /// - `Ok(())` if the operation is successful.
+    /// **Clears all password entries from the database.**
     ///
     /// # Errors
-    /// - Returns `rusqlite::Error` if the database operation fails.
-    pub fn clear_all_passwords(&self) -> Result<(), rusqlite::Error> {
-        self.conn
-            .execute(Queries::CLEAR_ALL_PASSWORDS, [])
-            .map(|_| ())
+    /// - Returns `rusqlite::Error` if the operation fails.
+    pub fn clear_all_passwords(&self) -> Result<()> {
+        self.conn.execute(Queries::CLEAR_ALL_PASSWORDS, [])?;
+        Ok(())
     }
 }
