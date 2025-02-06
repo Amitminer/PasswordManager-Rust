@@ -1,88 +1,72 @@
----
-# 🔐 Password Manager  
+# 🔐 Password Manager
 
-A secure password manager with **AES-256-GCM encryption**, **Argon2 hashing**, and a **web API**.  
-Supports both **CLI** and **Web API** for managing passwords securely.  
+A secure password manager built with Rust, featuring AES-256-GCM encryption, Argon2 hashing, and both a web API and CLI interface. This project prioritizes security and provides a robust solution for managing your passwords.
 
----
+## 🚀 Features
 
-## 🚀 Features  
-✅ **Master Password Protection** (Argon2-based hashing)  
-✅ **AES-256-GCM Encryption** (Secure password storage)  
-✅ **SQLite Database** (Encrypted storage for passwords)  
-✅ **Web API Support** (Actix-Web based API)  
-✅ **Zeroization** (Sensitive data is securely erased from memory)  
-✅ **Frontend & CLI Support** (Use via Web UI or CLI)  
+* **Master Password Protection:** Securely protected using Argon2 hashing.
+* **AES-256-GCM Encryption:** Passwords are encrypted using AES-256-GCM for strong confidentiality and integrity.
+* **SQLite Database:** Encrypted SQLite database for persistent and secure storage.
+* **Web API (Actix-Web):** Manage passwords programmatically via a RESTful API.
+* **CLI Support:** Interact with the password manager directly from the command line.
+* **Zeroization:** Sensitive data is securely erased from memory after use.
+* **Frontend (Next.js):** Modern and user-friendly web interface.
 
----
+## 📦 Installation
 
-## 📦 Installation  
+This project consists of a frontend (Next.js) and a backend (Rust). Follow the instructions below to set up both.
 
-### **1️⃣ Frontend Setup**  
-The frontend is built using **Next.js**.  
+### 1️⃣ Frontend Setup (Next.js)
 
-#### **Requirements:**  
-- **Node.js** (Download from [nodejs.org](https://nodejs.org/))  
-- **Git** (Download from [git-scm.com](https://git-scm.com/))  
+#### Requirements
 
-#### **Install & Run**  
-```sh
-git clone https://github.com/Amitminer/PasswordManager-Rust.git
-cd PasswordManager-Rust
-cd website
-npm install
-npm run dev
-```
----
+* [Node.js](https://nodejs.org/)
+* [npm](https://www.npmjs.com/) (or yarn)
+* [Git](https://git-scm.com/)
 
-### **2️⃣ Backend Setup**  
-The backend is built in **Rust** using Actix-Web.  
+#### Installation and Running
 
-#### **Requirements:**  
-- **Rust & Cargo** ([Install Rust](https://rustup.rs/))  
-- **SQLite** (Bundled with `rusqlite`)  
-
-#### **Install & Run**  
-```sh
-git clone https://github.com/Amitminer/PasswordManager-Rust.git
-cd PasswordManager-Rust
-cargo build --release
-cargo run -- --api  # OR run compiled binary:
-./passwordmanager --api
-``
-
-This starts the **Web API** at `http://127.0.0.1:8080/api`.  
-
----
-
-## 🌍 Web API Usage  
-
-### **Available Endpoints**  
-| Method | Endpoint | Description |
-|--------|---------|-------------|
-| `GET` | `/api/initialize` | Check if the master password is set |
-| `POST` | `/api/create-master-password` | Set the master password |
-| `POST` | `/api/verify-master-password` | Verify master password |
-| `POST` | `/api/add-password` | Add a new password |
-| `GET` | `/api/list-passwords` | List stored passwords |
-| `GET` | `/api/get-password/{service}` | Retrieve a specific password |
-| `DELETE` | `/api/remove-password/{service}` | Remove a password |
-| `DELETE` | `/api/clear-all-data` | Delete all stored passwords |
-
----
-
-## 🐍 API Example (Python Requests)  
-
-### **1️⃣ Install Dependencies**  
-```sh
-pip install requests
+```bash
+git clone [https://github.com/Amitminer/PasswordManager-Rust.git](https://github.com/Amitminer/PasswordManager-Rust.git)
+cd PasswordManager-Rust/website
+npm install  # or yarn install
+npm run dev    # or yarn dev
 ```
 
-### **2️⃣ Sample Python Client**
+This will start the development server. The frontend will typically be available at `http://localhost:3000`.
+
+### 2️⃣ Backend Setup (Rust)
+
+#### Requirements
+
+* [Rust](https://www.rust-lang.org/tools/install)
+* [Cargo](https://doc.rust-lang.org/cargo/index.html)
+* SQLite (usually bundled with `rusqlite` crate, no separate installation needed)
+
+#### Installation and Running
+
+```bash
+cd PasswordManager-Rust
+cargo build --release  # Build the release version for optimized performance
+cargo run -- --api     # Run the backend with the API enabled
+
+# OR run the compiled binary directly (after building):
+./target/release/password-manager --api
+```
+
+The API will be available at `http://127.0.0.1:8080/api` (or `http://localhost:8080/api`).
+
+## 🌍 Web API Usage
+
+The backend provides a RESTful API for programmatic access.
+
+### 🐍 API Example (Python Requests)
+
 ```python
 import requests
+import json
 
-BASE_URL = "http://127.0.0.1:8080/api"
+BASE_URL = "[http://127.0.0.1:8080/api](http://127.0.0.1:8080/api)"
 
 def set_master_password(password):
     return requests.post(f"{BASE_URL}/create-master-password", json={"password": password}).json()
@@ -107,97 +91,78 @@ def clear_all_data():
     return requests.delete(f"{BASE_URL}/clear-all-data").json()
 
 if __name__ == "__main__":
-    master_password = "my_secure_master_password"
-
+    master_password = "my_secure_master_password"  # Replace with a strong password
     print("🔑 Setting Master Password...")
     print(set_master_password(master_password))
-
     print("\n✅ Verifying Master Password...")
     print(verify_master_password(master_password))
-
     print("\n🔐 Adding a Password Entry...")
     print(add_password("example.com", "admin", "secure123"))
-
     print("\n📜 Listing Stored Passwords...")
     print(list_passwords())
-
     print("\n🔎 Retrieving Password for 'example.com'...")
     print(get_password("example.com"))
-
     print("\n❌ Removing Password for 'example.com'...")
     print(remove_password("example.com"))
-
     print("\n⚠️ Clearing All Data...")
     print(clear_all_data())
+
 ```
 
-## 🔗 CLI Usage  
+**Important:** The Python example assumes the API is running. Make sure you have started the backend as described above. The API endpoints and expected JSON request/response formats should be documented clearly (consider using OpenAPI/Swagger).
 
-### **1️⃣ Running the CLI**  
-```sh
-cargo run
-```
-or  
-```sh
-./passwordmanager
+## 🔗 CLI Usage
+
+```bash
+cargo run  # or ./target/release/password-manager
 ```
 
-### **2️⃣ Available CLI Actions**  
-- **Add a new password**  
-- **Retrieve stored passwords**  
-- **List all stored websites and usernames**  
-- **Remove passwords**  
-- **Clear all stored data**  
+This will launch the interactive CLI application.  You'll be presented with a menu:
 
-### **3️⃣ Security**  
-- **Use a strong master password**  
-- **Passwords are encrypted with AES-256-GCM**  
-- **Data is erased from memory after use (zeroization)**  
-
----
-
-## 🔒 Security  
-
-### **1️⃣ Argon2 Password Hashing**  
-- **Memory Cost**: 19 MB  
-- **Time Cost**: 2 iterations  
-- **Parallelism**: 1 thread  
-
-### **2️⃣ AES-256-GCM Encryption**  
-- **AES-GCM** ensures password confidentiality & integrity.  
-- **Unique nonce per encryption** to prevent attacks.  
-
----
-
-## 🏗 Why This Project?  
-This project was built to learn:  
-✅ Secure **password storage & encryption**  
-✅ Cryptographic techniques (**Argon2, AES-256-GCM**)  
-✅ Database security with **SQLite**  
-✅ **Web API Development** in Rust with **Actix-Web**  
-✅ **Frontend & Backend Security Best Practices**  
-
----
-
-## ⚙️ Dependencies  
-
-### **📦 Rust Crates Used:**  
-- `actix-web` – Web API framework  
-- `rusqlite` – SQLite database  
-- `argon2` – Password hashing  
-- `aes-gcm` – AES-256-GCM encryption  
-- `rpassword` – Secure password input  
-- `zeroize` – Secure memory wiping  
-
-### **🌍 Frontend Dependencies:**  
-- `Next.js` – React-based web framework  
-- `Tailwind CSS` – UI styling  
-- `Axios` – API calls  
-
----
-
-## 📜 License  
-This project is **open-source** and licensed under the **MIT License**.  
-
---- 
 ```
+Welcome to Password Manager:
+
+1. Add new password
+2. Remove password
+3. List passwords
+4. Get password info
+5. Clear all data
+6. Exit
+```
+
+Follow the prompts within the CLI to manage your passwords.
+
+## 🔒 Security
+
+* **Argon2 Password Hashing:** Uses Argon2 for strong master password protection with configurable parameters (memory cost, time cost, parallelism). *Specify the exact parameters used in the implementation.*
+* **AES-256-GCM Encryption:** Employs AES-256-GCM for encrypting stored passwords, ensuring confidentiality and integrity. *Mention how the nonce is handled.*
+* **Zeroization:** Sensitive data is securely erased from memory using the `zeroize` crate.
+
+## 🏗 Why This Project?
+
+This project was developed for educational purposes to explore and implement:
+
+* Secure password storage and encryption techniques.
+* Cryptographic algorithms (Argon2, AES-256-GCM).
+* Database security with SQLite.
+* Web API development using Actix-Web.
+* Frontend development with Next.js.
+* Security best practices.
+
+## ⚙️ Dependencies
+
+* **Backend (Rust Crates):**
+    * `actix-web`: Web framework.
+    * `rusqlite`: SQLite database interaction.
+    * `argon2`: Password hashing.
+    * `aes-gcm`: AES-256-GCM encryption.
+    * `rpassword`: Secure password input.
+    * `zeroize`: Secure memory wiping.
+* **Frontend (Next.js):**
+    * `next`: React framework.
+    * `tailwindcss`: CSS framework (if used).
+    * `axios` (or `fetch`): HTTP client.
+
+## 📜 License
+
+This project is licensed under the MIT License.
