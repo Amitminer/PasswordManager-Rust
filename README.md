@@ -75,7 +75,7 @@ The backend provides a RESTful API for programmatic access.
 import requests
 import json
 
-BASE_URL = "[http://127.0.0.1:8080/api](http://127.0.0.1:8080/api)"
+BASE_URL = "http://127.0.0.1:8080/api"
 
 def set_master_password(password):
     return requests.post(f"{BASE_URL}/create-master-password", json={"password": password}).json()
