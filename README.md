@@ -27,13 +27,22 @@ This project consists of a frontend (Next.js) and a backend (Rust). Follow the i
 #### Installation and Running
 
 ```bash
-git clone [https://github.com/Amitminer/PasswordManager-Rust.git](https://github.com/Amitminer/PasswordManager-Rust.git)
+git clone https://github.com/Amitminer/PasswordManager-Rust.git
 cd PasswordManager-Rust/website
 npm install  # or yarn install
 npm run dev    # or yarn dev
 ```
 
 This will start the development server. The frontend will typically be available at `http://localhost:3000`.
+
+#### Frontend Screenshots
+
+Take a look at some screenshots of the frontend interface:
+
+- ![Homepage](screenshots/homepage.png)
+- ![Add Password](screenshots/add_passoword.png)
+- ![List Passwords](screenshots/list_passwords.png)
+- ![New Master Key](screenshots/new_master_key.png)
 
 ### 2️⃣ Backend Setup (Rust)
 
@@ -51,7 +60,7 @@ cargo build --release  # Build the release version for optimized performance
 cargo run -- --api     # Run the backend with the API enabled
 
 # OR run the compiled binary directly (after building):
-./target/release/password-manager --api
+./target/release/Password_Manager --api
 ```
 
 The API will be available at `http://127.0.0.1:8080/api` (or `http://localhost:8080/api`).
@@ -106,7 +115,6 @@ if __name__ == "__main__":
     print(remove_password("example.com"))
     print("\n⚠️ Clearing All Data...")
     print(clear_all_data())
-
 ```
 
 **Important:** The Python example assumes the API is running. Make sure you have started the backend as described above. The API endpoints and expected JSON request/response formats should be documented clearly (consider using OpenAPI/Swagger).
