@@ -1,4 +1,4 @@
-name: Build and Release (Windows)
+name: Build and Release
 
 on:
   push:
@@ -49,8 +49,50 @@ jobs:
           name: password-manager-windows
           path: release/password-manager-windows.tar.gz
 
+  build-and-release-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Package binary
+        run: |
+          mkdir -p release/linux
+          cp target/release/Password_Manager release/linux/password-manager
+          tar -czvf release/password-manager-linux.tar.gz -C release/linux password-manager
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: password-manager-linux
+          path: release/password-manager-linux.tar.gz
+
   create-release:
-    needs: build-and-release-windows
+    needs: [build-and-release-windows, build-and-release-linux]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -58,10 +100,17 @@ jobs:
           name: password-manager-windows
           path: release/windows
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: password-manager-linux
+          path: release/linux
+
       - name: Create release
         uses: ncipollo/release-action@v1.14.0
         with:
-          artifacts: "release/windows/password-manager-windows.tar.gz"
+          artifacts: |
+            release/windows/password-manager-windows.tar.gz
+            release/linux/password-manager-linux.tar.gz
           token: ${{ secrets.PAT_TOKEN }}
           name: Build v${{ github.run_number }}
           tag: v${{ github.run_number }}
@@ -73,4 +122,6 @@ jobs:
     steps:
       - uses: geekyeggo/delete-artifact@v5
         with:
-          name: password-manager-windows
+          name: |
+            password-manager-windows
+            password-manager-linux
