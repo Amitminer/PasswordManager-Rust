@@ -107,9 +107,9 @@ pub async fn verify_master_password(
             if let Ok(mut key) = app_state.encryption_key_mutex.lock() {
                 *key = encryption_key;
             }
-            HttpResponse::Ok().json("Master password verified successfully")
+            HttpResponse::Ok().json("true")
         }
-        Err(_) => HttpResponse::Unauthorized().json("Incorrect master password"),
+        Err(_) => HttpResponse::Unauthorized().json("false"),
     }
 }
 

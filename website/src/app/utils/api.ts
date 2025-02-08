@@ -1,7 +1,6 @@
 import axios from "axios";
 
 const BASE_URL = "http://127.0.0.1:8080/api";
-const MASTER_KEY_STORAGE_KEY = "master_key";
 
 /**
  * Check if the master password is set.
@@ -48,12 +47,12 @@ export const verifyMasterPassword = async (password: string): Promise<boolean> =
   try {
     console.log("[DEBUG] Verifying master password...");
     const response = await axios.post(`${BASE_URL}/verify-master-password`, { password });
+    console.log(response.data);
 
     console.log("[DEBUG] Master password verification result:", response.data);
 
-    if (response.data?.key) {
-      localStorage.setItem(MASTER_KEY_STORAGE_KEY, response.data.key);
-      console.log("[DEBUG] Master key stored in local storage.");
+    if (response.data === "true") {
+      console.log("[DEBUG] Master key received from server.");
       return true;
     }
 
@@ -66,25 +65,11 @@ export const verifyMasterPassword = async (password: string): Promise<boolean> =
 };
 
 /**
- * Retrieve the stored master key from local storage.
- * @returns {string | null} - The master key or null if not found.
- */
-export const getMasterKey = (): string | null => {
-  return localStorage.getItem(MASTER_KEY_STORAGE_KEY);
-};
-
-/**
  * Fetch the list of stored passwords.
  * @returns {Promise<any[]>} - Array of password objects or an empty array on failure.
  */
 export const listPasswords = async (): Promise<any[]> => {
   console.log("[DEBUG] Fetching password list...");
-
-  const masterKey = getMasterKey();
-  if (!masterKey) {
-    console.warn("[WARNING] Master key not available. Please verify the master password first.");
-    return [];
-  }
 
   try {
     const response = await axios.get(`${BASE_URL}/list-passwords`);
@@ -103,12 +88,6 @@ export const listPasswords = async (): Promise<any[]> => {
  * @param {string} password - Password.
  */
 export const addPassword = async (service: string, username: string, password: string): Promise<void> => {
-  const masterKey = getMasterKey();
-  if (!masterKey) {
-    console.warn("[WARNING] Cannot add password: Master key is missing.");
-    return;
-  }
-
   try {
     console.log(`[DEBUG] Adding password for service: ${service}...`);
     await axios.post(`${BASE_URL}/add-password`, { service, username, password });
@@ -123,12 +102,6 @@ export const addPassword = async (service: string, username: string, password: s
  * @param {string} service - Service name.
  */
 export const deletePassword = async (service: string): Promise<void> => {
-  const masterKey = getMasterKey();
-  if (!masterKey) {
-    console.warn("[WARNING] Cannot delete password: Master key is missing.");
-    return;
-  }
-
   try {
     console.log(`[DEBUG] Deleting password for service: ${service}...`);
     await axios.delete(`${BASE_URL}/remove-password/${service}`);
@@ -136,12 +109,4 @@ export const deletePassword = async (service: string): Promise<void> => {
   } catch (error) {
     console.error("[ERROR] Failed to delete password:", error);
   }
-};
-
-/**
- * Logout by clearing the master key.
- */
-export const logout = (): void => {
-  localStorage.removeItem(MASTER_KEY_STORAGE_KEY);
-  console.log("[DEBUG] Master key removed from local storage.");
 };

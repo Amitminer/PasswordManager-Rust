@@ -25,3 +25,5 @@ node_modules/
 .next/
 .env
 .env.local
+passwords.db
+website/package-lock.json

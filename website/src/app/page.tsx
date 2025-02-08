@@ -52,6 +52,8 @@ export default function Home() {
           alert("Master password must be at least 4 characters long");
           return;
         }
+        console.log("[DEBUG] Master password:", masterPassword);
+        console.log("[DEBUG] Confirm password:", confirmPassword);
         if (masterPassword !== confirmPassword) {
           alert("Passwords do not match");
           return;
